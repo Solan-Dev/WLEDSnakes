@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Iterable, Tuple
+from leddisplay.ddp import DDPClient
 import requests
 
 
@@ -9,8 +10,13 @@ Color = Tuple[int, int, int]
 
 class WLEDController:
     def __init__(self, ip: str, port: int = 80, timeout: float = 3.0) -> None:
+        self.ip = ip
+        self.port = port
         self.base_url = f"http://{ip}:{port}"
         self.timeout = timeout
+        # Reuse a single HTTP session (keep-alive) to reduce per-frame latency/jitter.
+        self._session = requests.Session()
+        self._ddp: DDPClient | None = None
 
     def _post_state(self, payload: dict) -> None:
         url = f"{self.base_url}/json/state"
@@ -20,21 +26,34 @@ class WLEDController:
             "tt": 0,  # transition time in ms
         }
         merged = {**base_payload, **payload}
-        resp = requests.post(url, json=merged, timeout=self.timeout)
+        resp = self._session.post(url, json=merged, timeout=self.timeout)
         resp.raise_for_status()
 
     def get_info(self) -> dict:
         url = f"{self.base_url}/json/info"
-        resp = requests.get(url, timeout=self.timeout)
+        resp = self._session.get(url, timeout=self.timeout)
         resp.raise_for_status()
         return resp.json()
 
     def get_state(self) -> dict:
         """Return the full current state object from WLED."""
         url = f"{self.base_url}/json/state"
-        resp = requests.get(url, timeout=self.timeout)
+        resp = self._session.get(url, timeout=self.timeout)
         resp.raise_for_status()
         return resp.json()
+
+    def close(self) -> None:
+        self._session.close()
+        if self._ddp is not None:
+            self._ddp.close()
+            self._ddp = None
+
+    def _get_ddp_client(self, ddp_port: int = 4048, destination_id: int = 1) -> DDPClient:
+        if self._ddp is None or self._ddp.port != ddp_port or self._ddp.destination_id != destination_id:
+            if self._ddp is not None:
+                self._ddp.close()
+            self._ddp = DDPClient(host=self.ip, port=ddp_port, destination_id=destination_id)
+        return self._ddp
 
     def set_brightness(self, bri: int) -> None:
         bri = max(0, min(255, bri))
@@ -95,3 +114,38 @@ class WLEDController:
             payload["bri"] = max(0, min(255, bri))
 
         self._post_state(payload)
+
+    def set_pixels_ddp(
+        self,
+        colors: Iterable[Color],
+        *,
+        bri: int | None = None,
+        ddp_port: int = 4048,
+        destination_id: int = 1,
+    ) -> None:
+        """Send a full frame via DDP UDP packets."""
+        if bri is not None:
+            self.set_brightness(bri)
+
+        client = self._get_ddp_client(ddp_port=ddp_port, destination_id=destination_id)
+        client.send_colors(colors)
+    def set_pixels_ddp_sparse(
+        self,
+        pixel_updates: Iterable[Tuple[int, Color]],
+        *,
+        bri: int | None = None,
+        ddp_port: int = 4048,
+        destination_id: int = 1,
+    ) -> None:
+        """Set only changed pixels using DDP sparse updates.
+
+        pixel_updates: iterable of (physical_pixel_index, (r, g, b)).
+
+        This is much more efficient than sending full frames when only a few pixels change.
+        For Snake: typically ~4-6 pixels change per tick vs 256 total.
+        """
+        if bri is not None:
+            self.set_brightness(bri)
+
+        client = self._get_ddp_client(ddp_port=ddp_port, destination_id=destination_id)
+        client.send_sparse_update(pixel_updates)

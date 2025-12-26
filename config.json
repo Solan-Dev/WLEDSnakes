@@ -1,14 +1,11 @@
 {
   "wled": {
-    "ip": "192.168.1.222",
+    "ip": "10.249.3.191",
     "port": 80,
     "timeout_seconds": 3.0
   },
   "matrix": {
     "width": 32,
-    "height": 8,
-    "serpentine": true,
-    "start_corner": "top_left",
-    "orientation": "horizontal"
+    "height": 8
   }
 }

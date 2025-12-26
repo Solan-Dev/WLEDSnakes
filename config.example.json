@@ -6,9 +6,11 @@
   },
   "matrix": {
     "width": 32,
-    "height": 8,
-    "serpentine": true,
-    "start_corner": "top_left",
-    "orientation": "horizontal"
+    "height": 8
+  },
+  "output": {
+    "protocol": "json",
+    "ddp_port": 4048,
+    "ddp_destination_id": 1
   }
 }

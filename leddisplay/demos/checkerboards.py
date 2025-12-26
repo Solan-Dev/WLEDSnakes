@@ -1,41 +1,30 @@
 from __future__ import annotations
 
 import time
-from typing import List, Tuple
+from typing import Tuple
 
-from leddisplay.wled_controller import WLEDController
-from leddisplay.matrix_mapping import xy_to_index
+from leddisplay.display import MatrixDisplay
+from leddisplay.framebuffer import MatrixFramebuffer
 
 Color = Tuple[int, int, int]
 
 
-def _make_checkerboard(width: int,
-                       height: int,
-                       color1: Color,
-                       color2: Color,
-                       serpentine: bool) -> List[Color]:
-    pixels: List[Color] = [(0, 0, 0)] * (width * height)
-    for y in range(height):
-        for x in range(width):
+def _draw_checkerboard(framebuffer: MatrixFramebuffer, color1: Color, color2: Color) -> None:
+    for y in range(framebuffer.height):
+        for x in range(framebuffer.width):
             c = color1 if (x + y) % 2 == 0 else color2
-            idx = xy_to_index(x, y, width, height, serpentine=serpentine)
-            pixels[idx] = c
-    return pixels
+            framebuffer.set_pixel(x, y, c)
 
 
-def run_checkerboards(controller: WLEDController,
-                      width: int,
-                      height: int,
-                      serpentine: bool = False) -> None:
+def run_checkerboards(display: MatrixDisplay) -> None:
     """Show a couple of checkerboard patterns using per-pixel control.
-
-    For WLED 2D matrices, we normally treat the grid as non-serpentine here
-    and let WLED handle the underlying zig-zag wiring.
     """
-    checker1 = _make_checkerboard(width, height, (0, 255, 0), (0, 0, 0), serpentine)
-    controller.set_pixels(checker1)
+    framebuffer = MatrixFramebuffer(display.width, display.height)
+
+    _draw_checkerboard(framebuffer, (0, 255, 0), (0, 0, 0))
+    display.show(framebuffer)
     time.sleep(1.0)
 
-    checker2 = _make_checkerboard(width, height, (0, 0, 255), (255, 128, 0), serpentine)
-    controller.set_pixels(checker2)
+    _draw_checkerboard(framebuffer, (0, 0, 255), (255, 128, 0))
+    display.show(framebuffer)
     time.sleep(1.0)
