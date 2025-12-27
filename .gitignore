@@ -3,6 +3,7 @@ __pycache__/
 *.pyc
 .env
 .env.*
+config.json
 config.local.json
 PROJECT_NARRATIVE.md
 OPTIMIZATION_RESULTS.md
