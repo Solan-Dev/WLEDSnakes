@@ -10,6 +10,8 @@ from leddisplay.demos.checkerboards import run_checkerboards
 from leddisplay.demos.solid_colors import run_solid_colors
 from leddisplay.demos.life_demo import run_game_of_life
 from leddisplay.games.snake_runner import run_snake
+from leddisplay.scenes.runner import run_fireplace
+from leddisplay.scenes.runner import run_snowfall
 
 
 Brightness = 1
@@ -96,9 +98,15 @@ def main() -> None:
     # print("Running Game of Life...")
     # run_game_of_life(display, tick_seconds=0.3)
 
-    # 6) Snake game (WASD, P pause, Q quit)
-    print("Running Snake...")
-    run_snake(display, tick_seconds=0.2)
+    # 6) Fireplace ambience scene
+    # print("Running Fireplace scene... Press Ctrl+C to exit.")
+    # run_fireplace(display, target_fps=30.0)
+
+    run_snowfall(display, target_fps=30.0)
+
+    # 7) Snake game (WASD, P pause, Q quit)
+    # print("Running Snake...")
+    # run_snake(display, tick_seconds=0.2)
 
     print("Done.")
 

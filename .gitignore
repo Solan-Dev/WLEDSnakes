@@ -4,3 +4,5 @@ __pycache__/
 .env
 .env.*
 config.local.json
+PROJECT_NARRATIVE.md
+OPTIMIZATION_RESULTS.md
